@@ -115,6 +115,68 @@
 
     .cost-row b { color: var(--ink); }
 
+    .vote-form {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .vote-field {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .vote-field input,
+    .vote-field select,
+    .vote-form button {
+      min-height: 46px;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--ink);
+      background: #fffdf9;
+      font: inherit;
+    }
+
+    .vote-form button {
+      border-color: var(--terracotta);
+      color: #fffaf3;
+      background: var(--terracotta);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .vote-form button:disabled { opacity: .6; cursor: wait; }
+
+    .vote-status {
+      min-height: 1.7em;
+      margin: 0;
+      color: var(--muted);
+      font-size: .86rem;
+    }
+
+    .vote-results {
+      display: grid;
+      gap: 8px;
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .vote-result {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--cream);
+    }
+
+    .vote-result strong { color: var(--ink); }
+    .vote-result span { color: var(--muted); }
+
     main {
       width: min(100% - 32px, 700px);
       margin: 0 auto;
@@ -274,6 +336,31 @@
       </div>
     </section>
 
+    <section class="day" aria-labelledby="dinner-vote-title">
+      <div class="day-heading">
+        <h2 id="dinner-vote-title">晚餐投票</h2>
+        <span class="date-note">大家都能看・每人新增一票</span>
+      </div>
+      <form class="vote-form" id="vote-form">
+        <label class="vote-field">
+          暱稱
+          <input id="vote-nickname" name="nickname" maxlength="40" required autocomplete="nickname" placeholder="例如：小安">
+        </label>
+        <label class="vote-field">
+          晚餐選項
+          <select id="vote-option" name="option" required>
+            <option value="" selected disabled>請選擇</option>
+            <option value="牛肉湯">牛肉湯</option>
+            <option value="台南小吃">台南小吃</option>
+            <option value="火鍋">火鍋</option>
+          </select>
+        </label>
+        <button type="submit" id="vote-submit">送出投票</button>
+        <p class="vote-status" id="vote-status" role="status" aria-live="polite"></p>
+      </form>
+      <ul class="vote-results" id="vote-results" aria-label="晚餐投票結果"></ul>
+    </section>
+
     <div class="day-tabs" role="tablist" aria-label="選擇行程日">
       <button class="day-tab" id="tab-day-one" type="button" role="tab" aria-selected="true" aria-controls="day-one-panel">第一天</button>
       <button class="day-tab" id="tab-day-two" type="button" role="tab" aria-selected="false" aria-controls="day-two-panel">第二天</button>
@@ -340,6 +427,66 @@
 
   <footer>台南兩天一夜・和朋友一起慢慢旅行</footer>
   <script>
+    const SUPABASE_URL = 'https://ugtfnvylrxdolkttyoqh.supabase.co';
+    const SUPABASE_PUBLIC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVndGZudnlscnhkb2xrdHR5b3FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNjMwNDksImV4cCI6MjEwNjgzOTA0OX0.8Nb5_d1Xet6izeTKtc6KxA3opLZjTXcIwauc3-PIu6c';
+    const VOTES_URL = `${SUPABASE_URL}/rest/v1/dinner_votes`;
+    const voteForm = document.querySelector('#vote-form');
+    const voteStatus = document.querySelector('#vote-status');
+    const voteResults = document.querySelector('#vote-results');
+    const voteSubmit = document.querySelector('#vote-submit');
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>'"]/g, (character) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[character]));
+    }
+
+    async function loadVotes() {
+      const response = await fetch(`${VOTES_URL}?select=nickname,option&order=id.desc`, {
+        headers: { apikey: SUPABASE_PUBLIC_KEY, Authorization: `Bearer ${SUPABASE_PUBLIC_KEY}` }
+      });
+      if (!response.ok) throw new Error('無法讀取投票結果');
+      const votes = await response.json();
+      const grouped = votes.reduce((result, vote) => {
+        result[vote.option] ??= { count: 0, names: [] };
+        result[vote.option].count += 1;
+        result[vote.option].names.push(vote.nickname);
+        return result;
+      }, {});
+      voteResults.innerHTML = Object.entries(grouped).map(([option, data]) => `
+        <li class="vote-result"><strong>${escapeHtml(option)}</strong><span>${data.count} 票・${data.names.map(escapeHtml).join('、')}</span></li>
+      `).join('') || '<li class="vote-result"><span>目前還沒有投票</span></li>';
+    }
+
+    voteForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      voteSubmit.disabled = true;
+      voteStatus.textContent = '送出中…';
+      const formData = new FormData(voteForm);
+      try {
+        const response = await fetch(VOTES_URL, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_PUBLIC_KEY,
+            Authorization: `Bearer ${SUPABASE_PUBLIC_KEY}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal'
+          },
+          body: JSON.stringify({ nickname: formData.get('nickname').trim(), option: formData.get('option') })
+        });
+        if (!response.ok) throw new Error('投票沒有送出，請稍後再試');
+        voteForm.reset();
+        voteStatus.textContent = '投票成功！';
+        await loadVotes();
+      } catch (error) {
+        voteStatus.textContent = error.message;
+      } finally {
+        voteSubmit.disabled = false;
+      }
+    });
+
+    loadVotes().catch((error) => { voteStatus.textContent = error.message; });
+
     const dayTabs = document.querySelectorAll('.day-tab');
     const dayPanels = document.querySelectorAll('.day-panel');
 
