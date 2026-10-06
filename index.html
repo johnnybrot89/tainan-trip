@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>成本考量</title>
+  <style>
+    :root {
+      --ink: #2f2a26;
+      --muted: #766b63;
+      --paper: #fffaf3;
+      --cream: #f4eadb;
+      --terracotta: #b85c3d;
+      --sage: #71806b;
+      --line: #eadcc9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      line-height: 1.7;
+    }
+
+    .hero {
+      padding: 42px 22px 34px;
+      color: #fffaf3;
+      background: var(--terracotta);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      font-size: .82rem;
+      letter-spacing: .18em;
+      opacity: .85;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 9vw, 3rem);
+      line-height: 1.2;
+      letter-spacing: .04em;
+    }
+
+    .intro {
+      max-width: 620px;
+      margin: 14px 0 0;
+      font-size: .98rem;
+      opacity: .92;
+    }
+
+    .cost-summary {
+      margin: 22px auto 0;
+      padding: 18px 16px;
+      border: 2px solid var(--terracotta);
+      border-radius: 18px;
+      background: #fffdf9;
+      box-shadow: 0 8px 24px rgba(83, 54, 34, .08);
+    }
+
+    .cost-summary h2 {
+      margin: 0 0 12px;
+      color: var(--terracotta);
+      font-size: 1.3rem;
+    }
+
+    .cost-total {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .cost-total strong {
+      font-size: 1.65rem;
+      color: var(--ink);
+    }
+
+    .cost-total span {
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .cost-list {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    .cost-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .cost-row b { color: var(--ink); }
+
+    main {
+      width: min(100% - 32px, 700px);
+      margin: 0 auto;
+      padding: 22px 0 42px;
+    }
+
+    .day {
+      margin: 0 0 24px;
+      padding: 20px 16px 8px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fffdf9;
+      box-shadow: 0 8px 24px rgba(83, 54, 34, .06);
+    }
+
+    .day-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 22px 0 12px;
+    }
+
+    .day-tab {
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      background: #fffdf9;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .day-tab[aria-selected="true"] {
+      border-color: var(--terracotta);
+      color: #fffaf3;
+      background: var(--terracotta);
+    }
+
+    .day-panel[hidden] { display: none; }
+
+    .stops-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      margin: 0 -4px;
+      padding: 0 4px 12px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+
+    .day-heading {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin: 0 0 6px;
+      color: var(--terracotta);
+    }
+
+    .day-heading h2 {
+      margin: 0;
+      font-size: 1.45rem;
+      letter-spacing: .05em;
+    }
+
+    .date-note {
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
+    .stop {
+      position: relative;
+      display: grid;
+      grid-template-columns: 74px 1fr;
+      gap: 12px;
+      padding: 16px 0 18px;
+      border-top: 1px solid var(--line);
+      scroll-snap-align: start;
+    }
+
+    .stops-scroll .stop {
+      flex: 0 0 min(82vw, 290px);
+      min-height: 156px;
+      align-content: start;
+      margin: 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffdf9;
+    }
+
+    .stops-scroll .stop:first-child { border-top: 1px solid var(--line); }
+
+    .time {
+      color: var(--sage);
+      font-weight: 800;
+      font-size: .95rem;
+      letter-spacing: .02em;
+    }
+
+    .place {
+      margin: 0 0 3px;
+      font-size: 1.08rem;
+      font-weight: 800;
+      letter-spacing: .03em;
+    }
+
+    .desc {
+      margin: 0;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    .hint {
+      margin: 6px 0 0;
+      padding: 14px 16px;
+      border-radius: 12px;
+      color: #5d5147;
+      background: var(--cream);
+      font-size: .86rem;
+    }
+
+    footer {
+      padding: 6px 22px 32px;
+      color: var(--muted);
+      text-align: center;
+      font-size: .8rem;
+    }
+
+    @media (min-width: 560px) {
+      .hero { padding: 56px 28px 44px; }
+      main { width: min(100% - 48px, 700px); padding-top: 30px; }
+      .day { padding: 24px 22px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <p class="eyebrow">TÀI-NÀN · BUDGET OVERVIEW</p>
+    <h1>成本考量</h1>
+    <p class="intro">先看預算，再看行程；以下金額為示意，方便老闆快速掌握整體成本。</p>
+  </header>
+
+  <main>
+    <section class="cost-summary" aria-labelledby="cost-title">
+      <h2 id="cost-title">預估總成本</h2>
+      <div class="cost-total">
+        <strong>NT$ 4,800</strong>
+        <span>每人・示意金額</span>
+      </div>
+      <div class="cost-list">
+        <div class="cost-row"><span>交通</span><b>NT$ 1,200</b></div>
+        <div class="cost-row"><span>住宿</span><b>NT$ 1,800</b></div>
+        <div class="cost-row"><span>餐飲</span><b>NT$ 1,200</b></div>
+        <div class="cost-row"><span>門票與雜支</span><b>NT$ 600</b></div>
+      </div>
+    </section>
+
+    <div class="day-tabs" role="tablist" aria-label="選擇行程日">
+      <button class="day-tab" id="tab-day-one" type="button" role="tab" aria-selected="true" aria-controls="day-one-panel">第一天</button>
+      <button class="day-tab" id="tab-day-two" type="button" role="tab" aria-selected="false" aria-controls="day-two-panel">第二天</button>
+    </div>
+
+    <section class="day day-panel" id="day-one-panel" role="tabpanel" aria-labelledby="tab-day-one">
+      <div class="day-heading">
+        <h2 id="day-one">第一天</h2>
+        <span class="date-note">古蹟散步・小吃巡禮</span>
+      </div>
+      <div class="stops-scroll" aria-label="第一天行程，可左右滑動">
+        <article class="stop"><time class="time" datetime="10:00">10:00</time><div><h3 class="place">台南火車站（示意）</h3><p class="desc">集合後先寄放行李，從車站出發展開古城散步。</p></div></article>
+        <article class="stop"><time class="time" datetime="10:40">10:40</time><div><h3 class="place">赤崁樓（示意）</h3><p class="desc">看看紅磚古蹟與碑林，感受台南悠久的城市故事。</p></div></article>
+        <article class="stop"><time class="time" datetime="12:30">12:30</time><div><h3 class="place">老城小吃店（示意）</h3><p class="desc">來一碗牛肉湯和幾樣在地小菜，補充下午散步的能量。</p></div></article>
+        <article class="stop"><time class="time" datetime="15:00">15:00</time><div><h3 class="place">神農街・海安路（示意）</h3><p class="desc">逛逛老屋店家與街區小店，傍晚留下好看的散步時光。</p></div></article>
+      </div>
+    </section>
+
+    <section class="day day-panel" id="day-two-panel" role="tabpanel" aria-labelledby="tab-day-two" hidden>
+      <div class="day-heading">
+        <h2 id="day-two">第二天</h2>
+        <span class="date-note">自然風景・午後甜點</span>
+      </div>
+      <div class="stops-scroll" aria-label="第二天行程，可左右滑動">
+        <article class="stop"><time class="time" datetime="09:00">09:00</time><div><h3 class="place">安平古堡（示意）</h3><p class="desc">走進老城牆與古堡遺跡，認識台南開台歷史的一頁。</p></div></article>
+        <article class="stop"><time class="time" datetime="11:00">11:00</time><div><h3 class="place">安平樹屋（示意）</h3><p class="desc">欣賞榕樹與老建築交織的特別景觀，拍幾張旅途紀念照。</p></div></article>
+        <article class="stop"><time class="time" datetime="13:00">13:00</time><div><h3 class="place">安平午餐店（示意）</h3><p class="desc">品嘗蝦餅、豆花等經典小吃，吃飽再悠閒逛逛附近街巷。</p></div></article>
+        <article class="stop"><time class="time" datetime="15:00">15:00</time><div><h3 class="place">台江夕陽景點（示意）</h3><p class="desc">用一段濕地風景收尾，之後返回市區取行李、準備返程。</p></div></article>
+      </div>
+    </section>
+
+    <p class="hint">小提醒：店名與時間目前都是示意版本，之後可以再換成實際安排。</p>
+
+    <section class="day" aria-labelledby="before-trip">
+      <div class="day-heading">
+        <h2 id="before-trip">行前提醒</h2>
+      </div>
+      <article class="stop">
+        <div class="time">天氣</div>
+        <p class="desc">示意：晴時多雲，白天溫暖，建議查看出發前幾天的預報。</p>
+      </article>
+      <article class="stop">
+        <div class="time">攜帶</div>
+        <p class="desc">示意：水壺、防曬用品、雨具、行動電源與舒適好走的鞋子。</p>
+      </article>
+      <article class="stop">
+        <div class="time">集合</div>
+        <p class="desc">示意：第一天 10:00，台南火車站大廳入口集合。</p>
+      </article>
+    </section>
+  </main>
+
+  <footer>台南兩天一夜・和朋友一起慢慢旅行</footer>
+  <script>
+    const dayTabs = document.querySelectorAll('.day-tab');
+    const dayPanels = document.querySelectorAll('.day-panel');
+
+    dayTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        dayTabs.forEach((item) => item.setAttribute('aria-selected', item === tab ? 'true' : 'false'));
+        dayPanels.forEach((panel) => {
+          panel.hidden = panel.id !== tab.getAttribute('aria-controls');
+        });
+      });
+    });
+  </script>
+</body>
+</html>
